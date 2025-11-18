@@ -53,7 +53,10 @@ In the **Environment** section, add these variables:
 |-----|-------|-------------|
 | `JWT_SECRET_KEY` | `your-super-secret-random-key-here` | A strong random string for JWT token signing |
 | `FLASK_DEBUG` | `False` | Set to False for production |
-| `PORT` | (Auto-set by Render) | Automatically set by Render, don't override |
+
+**⚠️ IMPORTANT**: 
+- **DO NOT** set `PORT` manually - Render automatically sets this environment variable
+- If you see `PORT` in your environment variables list, **DELETE IT**
 
 **Important**: Generate a strong `JWT_SECRET_KEY`:
 - Use a long random string (at least 32 characters)
@@ -99,32 +102,61 @@ In the **Environment** section, add these variables:
 
 ## 🔍 Troubleshooting
 
-### Build Fails
+### Common Errors and Solutions
 
-**Issue**: Build timeout or memory error
-- **Solution**: Remove `pyaudio` and `speechrecognition` if not needed (they're heavy)
-- Update `requirements.txt` to remove these if not using audio features
+#### ❌ Error: "ModuleNotFoundError: No module named 'gunicorn'"
+**Solution**: Make sure `gunicorn` is in `requirements.txt` (already added)
 
-**Issue**: Import errors
-- **Solution**: Check that all dependencies are in `requirements.txt`
+#### ❌ Error: "Address already in use" or Port binding issues
+**Solution**: 
+- **Remove** the `PORT` environment variable from Render dashboard (Render sets it automatically)
+- The Procfile already includes `--bind 0.0.0.0:$PORT`
 
-### App Crashes on Startup
+#### ❌ Error: Build fails with "pyaudio" or "speechrecognition" 
+**Solution**: These have been removed from `requirements.txt`. Pull latest changes:
+```bash
+git pull origin main
+```
 
-**Issue**: Port binding error
-- **Solution**: Already handled - app uses `PORT` environment variable
+#### ❌ Error: "Memory limit exceeded" or Build timeout
+**Cause**: Free tier (512MB RAM) may not be enough for PyTorch + Transformers
+**Solutions**:
+1. **Upgrade to Starter plan** ($7/month) - Recommended for ML models
+2. **OR** Use lighter model by modifying `app.py` to skip model loading on startup (use fallback only)
 
-**Issue**: Model loading fails
-- **Solution**: App has fallback to keyword-based detection, should still work
+#### ❌ Error: "Import errors" or "Module not found"
+**Solution**: 
+- Check build logs to see which package failed
+- Verify `requirements.txt` has all dependencies
+- Make sure you're using the correct Python version (3.12.0)
 
-### 502 Bad Gateway
+#### ❌ Error: "502 Bad Gateway" after deployment
+**Causes & Solutions**:
+- **Cold start** (Free tier): Wait 30-60 seconds, then refresh
+- **App crashed**: Check Logs tab for error messages
+- **Memory issue**: App may need more RAM (upgrade plan)
+- **Startup timeout**: First load takes time (downloading models)
 
-**Issue**: App takes too long to start
-- **Solution**: This is normal on free tier (cold start). Wait 30-60 seconds after first request
+#### ❌ Error: "Cannot connect to database"
+**Solution**: SQLite should work automatically. If issues persist:
+- Database file location: `instance/users.db` (created automatically)
+- Make sure `instance/` directory exists (app creates it)
 
-### CORS Errors
+#### ❌ Error: CORS errors in browser
+**Solution**: Already handled - app automatically adds Render URL to allowed origins
+- Check that `RENDER_EXTERNAL_URL` environment variable exists (auto-set by Render)
 
-**Issue**: Frontend can't connect to API
-- **Solution**: Already handled - app automatically adds Render URL to allowed origins
+### How to Check Error Logs
+
+1. Go to your Render Dashboard
+2. Click on your service (`emotion-art-generator`)
+3. Click on **"Logs"** tab
+4. Look for error messages in red
+5. Common indicators:
+   - `ERROR` - Application error
+   - `ModuleNotFoundError` - Missing dependency
+   - `Address already in use` - Port binding issue
+   - `MemoryError` or `Killed` - Out of memory
 
 ## 🔗 After Deployment
 

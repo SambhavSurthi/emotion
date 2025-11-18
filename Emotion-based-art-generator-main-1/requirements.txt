@@ -2,8 +2,6 @@ flask
 flask-cors
 transformers
 torch
-speechrecognition
-pyaudio
 numpy
 scipy
 flask_sqlalchemy

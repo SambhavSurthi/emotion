@@ -55,14 +55,14 @@ with app.app_context():
 # Emotion model load (with fallback)
 # ------------------------------
 emotion_art = {
-    "happy": "happy.png",
-    "sadness": "sad.png",
-    "anger": "angry.png",
-    "fear": "fear.png",
-    "love": "love.png",
-    "surprise": "surprise.png",
-    "disgust": "disgust.png",
-    "neutral": "calm.png"
+    "happy": "happy.PNG",
+    "sadness": "sad.PNG",
+    "anger": "anger.PNG",
+    "fear": "fear.PNG",
+    "love": "love.PNG",
+    "surprise": "suprise.PNG",  # Note: file is spelled "suprise" not "surprise"
+    "disgust": "disgust.PNG",
+    "neutral": "calm.PNG"  # File is named calm.PNG
 }
 
 # Check if ML model should be skipped (for free tier memory constraints)
@@ -177,6 +177,16 @@ def analyze_text():
             # emotion_model returns list of dicts
             result = emotion_model(text)[0]
             emotion = (result.get("label") or "").lower()
+            # Normalize emotion labels (ML model might return variations)
+            emotion_map = {
+                "joy": "happy",
+                "sad": "sadness",
+                "angry": "anger",
+                "fearful": "fear",
+                "surprised": "surprise",
+                "surprise": "surprise"  # Handle both spellings
+            }
+            emotion = emotion_map.get(emotion, emotion)
         else:
             emotion = demo_guess(text)
     except Exception as e:

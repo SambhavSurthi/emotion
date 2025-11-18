@@ -24,8 +24,17 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "supersecretkey")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=1)
 
-# Allow local dev origin (adjust as needed)
-CORS(app, resources={r"/*": {"origins": ["http://127.0.0.1:5500", "http://127.0.0.1:5000"]}})
+# Allow local dev origin and production origin
+allowed_origins = [
+    "http://127.0.0.1:5500",
+    "http://127.0.0.1:5000",
+    "http://localhost:5000"
+]
+# Add Render URL if in production
+render_url = os.getenv("RENDER_EXTERNAL_URL")
+if render_url:
+    allowed_origins.append(render_url)
+CORS(app, resources={r"/*": {"origins": allowed_origins}})
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
@@ -190,4 +199,6 @@ def analyze_demo():
 # ------------------------------
 if __name__ == "__main__":
     os.makedirs("static/art", exist_ok=True)
-    app.run(debug=True)
+    port = int(os.getenv("PORT", 5000))
+    debug = os.getenv("FLASK_DEBUG", "False").lower() == "true"
+    app.run(host="0.0.0.0", port=port, debug=debug)

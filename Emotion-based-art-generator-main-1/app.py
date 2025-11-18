@@ -65,17 +65,24 @@ emotion_art = {
     "neutral": "calm.png"
 }
 
-# Try to load HF pipeline; if it fails, fall back to None and use simple heuristic
-try:
-    from transformers import pipeline
-    emotion_model = pipeline(
-        "text-classification",
-        model="j-hartmann/emotion-english-distilroberta-base"
-    )
-    app.logger.info("Loaded HuggingFace emotion model.")
-except Exception as e:
-    emotion_model = None
-    app.logger.warning("Could not load HF model. Using demo heuristic. Error: %s", e)
+# Check if ML model should be skipped (for free tier memory constraints)
+skip_model = os.getenv("SKIP_ML_MODEL", "false").lower() == "true"
+emotion_model = None
+
+# Try to load HF pipeline; if it fails or is skipped, fall back to None and use simple heuristic
+if not skip_model:
+    try:
+        from transformers import pipeline
+        emotion_model = pipeline(
+            "text-classification",
+            model="j-hartmann/emotion-english-distilroberta-base"
+        )
+        app.logger.info("Loaded HuggingFace emotion model.")
+    except Exception as e:
+        emotion_model = None
+        app.logger.warning("Could not load HF model. Using demo heuristic. Error: %s", e)
+else:
+    app.logger.info("ML model loading skipped (SKIP_ML_MODEL=true). Using keyword-based detection.")
 
 def demo_guess(text: str) -> str:
     t = (text or "").lower()
